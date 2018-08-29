@@ -1,0 +1,7 @@
+{
+    "deployment_code": "us1",
+    "subscription_id": "",
+    "location": "USGov Arizona",
+    "cloud_environment_name": "USGovernment",
+    "resource_group": "SUS1AZ1-Packer"
+}
