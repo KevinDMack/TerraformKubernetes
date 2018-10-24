@@ -1,4 +1,4 @@
-subscription_id = ""
+subscription_id = "7a3a98d5-4b6b-4625-a1e8-3235d432f463"
 environment_code = "s"
 deployment_code = "us1"
 location_code = "az1"
@@ -22,5 +22,5 @@ data_disk_sizes = {
   "lkwn" = 1023
 }
 data_disk_counts = {
-  "lkwn" = 1
+  "lkwn" = 0
 }

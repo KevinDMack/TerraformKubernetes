@@ -11,24 +11,33 @@ resource "random_string" "kub-rs-pd-kv" {
 data "azurerm_subscription" "current" {
     subscription_id =  "${var.subscription_id}"
 }
-resource "azurerm_azuread_application" "kub-ad-app-kv" {
+resource "azurerm_azuread_application" "kub-ad-app-kv1" {
   count  = "${lookup(var.instance_counts, "lkma", 0) == 0 ? 0 : 1}"
-  name = "${format("%s%s%s-KUB", upper(var.environment_code), upper(var.deployment_code), upper(var.location_code))}"
+  name = "${format("%s%s%s-KUB1", upper(var.environment_code), upper(var.deployment_code), upper(var.location_code))}"
   available_to_other_tenants = false
   oauth2_allow_implicit_flow = true
 }
 
-resource "azurerm_azuread_service_principal" "kub-ad-sp-kv" {
+resource "azurerm_azuread_service_principal" "kub-ad-sp-kv1" {
   count = "${lookup(var.instance_counts, "lkma", 0) == 0 ? 0 : 1}"
-  application_id = "${azurerm_azuread_application.kub-ad-app-kv.application_id}"
+  application_id = "${azurerm_azuread_application.kub-ad-app-kv1.application_id}"
 }
 
 resource "azurerm_azuread_service_principal_password" "kub-ad-spp-kv" {
   count = "${lookup(var.instance_counts, "lkma", 0) == 0 ? 0 : 1}"
-  service_principal_id = "${azurerm_azuread_service_principal.kub-ad-sp-kv.id}"
+  service_principal_id = "${azurerm_azuread_service_principal.kub-ad-sp-kv1.id}"
   value                = "${element(random_string.kub-rs-pd-kv.*.result, count.index)}"
   end_date             = "2020-01-01T01:02:03Z"
 }
+
+resource "azurerm_role_assignment" "kub-ad-sp-ra-kv1" {
+  count = "${lookup(var.instance_counts, "lkma", 0) == 0 ? 0 : 1}"
+  scope                = "${data.azurerm_subscription.current.id}"
+  role_definition_name = "Reader"
+  principal_id         = "${azurerm_azuread_service_principal.kub-ad-sp-kv1.id}"
+
+  depends_on = ["azurerm_azuread_service_principal.kub-ad-sp-kv1"]
+} 
 
 resource "azurerm_key_vault" "kub-kv" {
   count = "${lookup(var.instance_counts, "lkma", 0) == 0 ? 0 : 1}"
@@ -44,7 +53,7 @@ resource "azurerm_key_vault" "kub-kv" {
 
   access_policy {
     tenant_id = "${var.keyvault_tenantid}"
-    object_id = "${azurerm_azuread_service_principal.kub-ad-sp-kv.id}"
+    object_id = "${azurerm_azuread_service_principal.kub-ad-sp-kv1.id}"
 
     key_permissions = [
       "get",
@@ -56,7 +65,7 @@ resource "azurerm_key_vault" "kub-kv" {
   }
   access_policy {
     tenant_id = "${var.keyvault_tenantid}"
-    object_id = "${azurerm_azuread_service_principal.kub-ad-sp-kv.id}"
+    object_id = "${azurerm_azuread_service_principal.kub-ad-sp-kv1.id}"
 
     key_permissions = [
       "create",
@@ -66,4 +75,6 @@ resource "azurerm_key_vault" "kub-kv" {
       "set",
     ]
   }
+
+  depends_on = ["azurerm_role_assignment.kub-ad-sp-ra-kv1"]
 }

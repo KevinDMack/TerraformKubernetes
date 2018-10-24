@@ -30,7 +30,7 @@ resource "azurerm_network_interface" "vm_nic" {
 }
 
 resource "azurerm_managed_disk" "data_disk" {
-  count = "${var.data_disk_count}"
+  count = "${var.instance_count == 0 ? 0 : var.instance_count * var.data_disk_count}"
   name = "${format("%s%03d-DataDisk", local.base_hostname, count.index + 1)}"
   location = "${var.azure_location}"
   resource_group_name = "${var.resource_group_name}"

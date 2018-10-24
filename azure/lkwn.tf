@@ -170,5 +170,5 @@ module "lkwn" {
   os_disk_size = "${lookup(var.os_disk_sizes, "lkwn", var.os_disk_size_default)}"
   data_disk_count = "${lookup(var.data_disk_counts, "lkwn", 0)}"
   data_disk_size = "${lookup(var.data_disk_sizes, "lkwn", 0)}"
-  vm_extensions_command = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "" : "sudo /var/tmp/kubenode.sh '${element(concat(azurerm_azuread_application.kub-ad-app-kv.*.application_id,list("")), 0)}' '${element(concat(random_string.kub-rs-pd-kv.*.result, list("")), 0)}' '${var.environment_code}${var.deployment_code}${var.location_code}lkub-kv1' '${var.keyvault_tenantid}'"}"
+  vm_extensions_command = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "" : "sudo /var/tmp/kubenode.sh '${element(concat(azurerm_azuread_application.kub-ad-app-kv1.*.application_id,list("")), 0)}' '${element(concat(random_string.kub-rs-pd-kv.*.result, list("")), 0)}' '${var.environment_code}${var.deployment_code}${var.location_code}lkub-kv1' '${var.keyvault_tenantid}'"}"
 }
