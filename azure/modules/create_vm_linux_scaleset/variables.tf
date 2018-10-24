@@ -105,3 +105,19 @@ variable "lb_backend_address_pool" {
   description = "The ids of the backend address pool for the load balancer"
   default = ""
 }
+
+variable "application_port" {
+  description = "The application port for the scaleset"
+  default = ""
+}
+
+variable "public_dns_name" {
+  description = "the Public DNS name of the scale set public ip"
+  default = ""
+}
+
+variable "nat_rule_name" {
+  description = "The name of the public nat rule"
+  default = ""
+}
+

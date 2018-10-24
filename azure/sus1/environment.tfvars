@@ -10,7 +10,7 @@ platform_fault_domain_count = "2"
 enable_vpn_scaffolding = 0
 instance_counts = {
   "lkwn" = 0
-  "lkma" = 0
+  "lkma" = 1
 }
 instance_sizes = {
   "lkwn" = "Standard_DS1_v2"

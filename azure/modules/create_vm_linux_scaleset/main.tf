@@ -29,24 +29,6 @@ resource "azurerm_network_interface" "vm_nic" {
   }
 }
 
-resource "azurerm_managed_disk" "data_disk" {
-  count = "${var.data_disk_count}"
-  name = "${format("%s%03d-DataDisk", local.base_hostname, count.index + 1)}"
-  location = "${var.azure_location}"
-  resource_group_name = "${var.resource_group_name}"
-  storage_account_type = "${var.storage_type}"
-  create_option = "Empty"
-  disk_size_gb = "${var.data_disk_size}"
-}
-
-resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
-  count =   "${var.instance_count == 0 ? 0 : var.instance_count * var.data_disk_count}"
-  virtual_machine_id = "${element(azurerm_virtual_machine.vm.*.id, ceil((count.index + 1) * 1.0 / var.data_disk_count) - 1)}"
-  managed_disk_id    = "${element(azurerm_managed_disk.data_disk.*.id, count.index)}"
-  lun                = "${floor((count.index +1) / ceil((count.index + 1) * 1.0 / var.data_disk_count)) - 1}"
-  caching            = "ReadOnly"
-} 
-
 resource "azurerm_storage_account" "diag_storage_account" {
   count = "${var.instance_count}"
   name = "${format("%sstg%03ddiag", local.base_hostname, count.index + 1)}"
@@ -57,27 +39,56 @@ resource "azurerm_storage_account" "diag_storage_account" {
   enable_blob_encryption = "true"
 }
 
-resource "azurerm_availability_set" "av_set" {
- count =   "${var.number_of_vms_in_avset == 0 ? 0 : ceil(var.instance_count * 1.0 / (var.number_of_vms_in_avset == 0 ? 1 : var.number_of_vms_in_avset))}"
- name = "${var.number_of_vms_in_avset == var.instance_count ? format("%s-AVSet", local.base_hostname) : format("%s-AVSet%03d", local.base_hostname, count.index + 1)}"
- location = "${var.azure_location}"
+resource "azurerm_lb" "vmss" {
+ name                = "${var.number_of_vms_in_avset == var.instance_count ? format("%s-lb", local.base_hostname) : format("%s-AVSet%03d", local.base_hostname, count.index + 1)}"
+ location            = "${var.azure_location}"
  resource_group_name = "${var.resource_group_name}"
- managed = true
- platform_fault_domain_count = "${var.platform_fault_domain_count}"
- platform_update_domain_count = 20
+
+ frontend_ip_configuration {
+   name                 = "PublicIPAddress"
+   public_ip_address_id = "${azurerm_public_ip.vmss.id}"
+ }
+}
+
+resource "azurerm_lb_backend_address_pool" "bpepool" {
+ resource_group_name = "${var.resource_group_name}"
+ loadbalancer_id     = "${azurerm_lb.vmss.id}"
+ name                = "${var.number_of_vms_in_avset == var.instance_count ? format("%s-beap", local.base_hostname) : format("%s-AVSet%03d", local.base_hostname, count.index + 1)}"
+}
+
+resource "azurerm_lb_probe" "vmss" {
+ resource_group_name = "${var.resource_group_name}"
+ loadbalancer_id     = "${azurerm_lb.vmss.id}"
+ name                = "${var.number_of_vms_in_avset == var.instance_count ? format("%s-running-probe", local.base_hostname) : format("%s-AVSet%03d", local.base_hostname, count.index + 1)}"
+ port                = "${var.application_port}"
+}
+
+resource "azurerm_lb_rule" "lbnatrule" {
+   resource_group_name            = "${var.resource_group_name}"
+   loadbalancer_id                = "${azurerm_lb.vmss.id}"
+   name                           = "${var.nat_rule_name}"
+   protocol                       = "Tcp"
+   frontend_port                  = "${var.application_port}"
+   backend_port                   = "${var.application_port}"
+   backend_address_pool_id        = "${azurerm_lb_backend_address_pool.bpepool.id}"
+   frontend_ip_configuration_name = "PublicIPAddress"
+   probe_id                       = "${azurerm_lb_probe.vmss.id}"
+}
+
+resource "azurerm_public_ip" "vmss" {
+ name                         = "${var.number_of_vms_in_avset == var.instance_count ? format("%s-pip", local.base_hostname) : format("%s-AVSet%03d", local.base_hostname, count.index + 1)}"
+ location                     = "${var.azure_location}"
+ resource_group_name          = "${var.resource_group_name}"
+ public_ip_address_allocation = "static"
+ domain_name_label            = "${var.public_dns_name}"
 }
 
 resource "azurerm_virtual_machine_scale_set" "vm" {
-  count = "1"
+  count = "${ var.instance_count}"
   name = "${format("%s%03d", local.base_hostname, count.index + 1)}"
   location = "${var.azure_location}"
   resource_group_name = "${var.resource_group_name}"
-  availability_set_id = "${var.number_of_vms_in_avset == 0 ? "" : element(concat(azurerm_availability_set.av_set.*.id, list("")), ceil(count.index / (var.number_of_vms_in_avset == 0 ? 1 : var.number_of_vms_in_avset)))}"
-  vm_size = "${var.vm_size}"
-  network_interface_ids = ["${element(azurerm_network_interface.vm_nic.*.id, count.index)}"]
-
-  delete_os_disk_on_termination = true
-  delete_data_disks_on_termination = false
+  upgrade_policy_mode = "Manual"
 
   lifecycle {
     #prevent_destroy = true
@@ -86,23 +97,22 @@ resource "azurerm_virtual_machine_scale_set" "vm" {
   sku {
     name = "${var.vm_size}"
     tier = ""
-    capacity = "${var.instance_count}""
+    capacity = "${var.instance_count}"
   }
 
-  storage_image_reference {
-    id = "${var.os_disk_image_id}"
+  storage_profile_image_reference {
+   id = "${var.os_disk_image_id}"
   }
 
-  storage_os_disk {
-    name = "${format("%s%03d", local.base_hostname, count.index + 1)}-osdisk"
-    caching = "ReadWrite"
-    create_option = "FromImage"
+  storage_profile_os_disk {
+    name              = "${format("%s%03d", local.base_hostname, count.index + 1)}-osdisk"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
     managed_disk_type = "${var.storage_type}"
-    disk_size_gb = "${var.os_disk_size}"
   }
 
   os_profile {
-    computer_name = "${format("%s%03d", local.base_hostname, count.index + 1)}"
+    computer_name_prefix = "${format("%s%03d", local.base_hostname, count.index + 1)}"
     admin_username = "uadmin"
   }
 
@@ -121,14 +131,15 @@ resource "azurerm_virtual_machine_scale_set" "vm" {
   }
 
   network_profile {
-    name=""
+    name="IPConfiguration"
     primary = true
 
     ip_configuration {
       name = "${format("%s%03dNetworkInterface", local.base_hostname, count.index + 1)}_Configuration"
       subnet_id = "${var.subnet_id}"
+      primary = true
       load_balancer_backend_address_pool_ids = ["${azurerm_lb_backend_address_pool.bpepool.id}"]
-      load_balancer_inbound_nat_rules_ids    = ["${element(azurerm_lb_nat_pool.lbnatpool.*.id, count.index)}"]
+      load_balancer_inbound_nat_rules_ids    = ["${element(azurerm_lb_rule.lbnatrule.id, count.index)}"]
     }
   }
 }
@@ -138,7 +149,7 @@ resource "azurerm_virtual_machine_scale_set" "vm" {
   name                 = "CustomScript"
   location             = "${var.azure_location}"
   resource_group_name  = "${var.resource_group_name}"
-  virtual_machine_name = "${element(azurerm_virtual_machine.vm.*.name, count.index)}"
+  virtual_machine_name = "${element(azurerm_virtual_machine_scale_set.vm.*.name, count.index)}"
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.0"

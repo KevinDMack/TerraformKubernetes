@@ -20,7 +20,7 @@ resource "azurerm_network_security_group" "lkwn" {
     name = "kubernetes_outbound"
     priority = 110
     direction = "Outbound"
-    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Block" : "Allow"}"
+    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Deny" : "Allow"}"
     protocol = "TCP"
     source_port_range = "*"
     destination_port_range = "6443"
@@ -31,7 +31,7 @@ resource "azurerm_network_security_group" "lkwn" {
     name = "kubernetes_inbound"
     priority = 111
     direction = "Inbound"
-    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Block" : "Allow"}"
+    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Deny" : "Allow"}"
     protocol = "TCP"
     source_port_range = "*"
     destination_port_range = "6443"
@@ -42,7 +42,7 @@ resource "azurerm_network_security_group" "lkwn" {
     name = "kubernetes_kublet_api_inbound"
     priority = 112
     direction = "Inbound"
-    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Block" : "Allow"}"
+    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Deny" : "Allow"}"
     protocol = "TCP"
     source_port_range = "*"
     destination_port_range = "10250"
@@ -53,7 +53,7 @@ resource "azurerm_network_security_group" "lkwn" {
     name = "kubernetes_readonly_api_inbound"
     priority = 113
     direction = "Inbound"
-    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Block" : "Allow"}"
+    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Deny" : "Allow"}"
     protocol = "TCP"
     source_port_range = "*"
     destination_port_range = "10255"
@@ -64,7 +64,7 @@ resource "azurerm_network_security_group" "lkwn" {
     name = "kubernetes_nodeport_inbound"
     priority = 114
     direction = "Inbound"
-    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Block" : "Allow"}"
+    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Deny" : "Allow"}"
     protocol = "TCP"
     source_port_range = "*"
     destination_port_range = "30000-32767"
@@ -75,7 +75,7 @@ resource "azurerm_network_security_group" "lkwn" {
     name = "kubernetes__kublet_api_outbound"
     priority = 115
     direction = "Outbound"
-    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Block" : "Allow"}"
+    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Deny" : "Allow"}"
     protocol = "TCP"
     source_port_range = "*"
     destination_port_range = "10250"
@@ -86,7 +86,7 @@ resource "azurerm_network_security_group" "lkwn" {
     name = "kubernetes_readonly_api_outbound"
     priority = 116
     direction = "Outbound"
-    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Block" : "Allow"}"
+    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Deny" : "Allow"}"
     protocol = "TCP"
     source_port_range = "*"
     destination_port_range = "10255"
@@ -97,7 +97,7 @@ resource "azurerm_network_security_group" "lkwn" {
     name = "kubernetes_nodeport_outbound"
     priority = 117
     direction = "Outbound"
-    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Block" : "Allow"}"
+    access = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "Deny" : "Allow"}"
     protocol = "TCP"
     source_port_range = "*"
     destination_port_range = "30000-32767"
@@ -148,7 +148,7 @@ resource "azurerm_lb_rule" "lb_int_kwn_rule" {
 }
 
 module "lkwn" {
-  source = "modules/create_vm_linux"
+  source = "modules/create_vm_linux_scaleset"
   os_code = "l"
   instance_type = "kwn"
   ssh_key = "${var.ssh_key}"
@@ -171,4 +171,7 @@ module "lkwn" {
   data_disk_count = "${lookup(var.data_disk_counts, "lkwn", 0)}"
   data_disk_size = "${lookup(var.data_disk_sizes, "lkwn", 0)}"
   vm_extensions_command = "${lookup(var.instance_counts, "lkma", 0) == 0 ? "" : "sudo /var/tmp/kubenode.sh '${element(concat(azurerm_azuread_application.kub-ad-app-kv1.*.application_id,list("")), 0)}' '${element(concat(random_string.kub-rs-pd-kv.*.result, list("")), 0)}' '${var.environment_code}${var.deployment_code}${var.location_code}lkub-kv1' '${var.keyvault_tenantid}'"}"
+  application_port ="80"
+  public_dns_name ="kmacktest"
+  nat_rule_name = "http"
 }
