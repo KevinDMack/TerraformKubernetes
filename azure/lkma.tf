@@ -183,5 +183,5 @@ module "lkma" {
   os_disk_size = "${lookup(var.os_disk_sizes, "lkma", var.os_disk_size_default)}"
   data_disk_count = "${lookup(var.data_disk_counts, "lkma", 0)}"
   data_disk_size = "${lookup(var.data_disk_sizes, "lkma", 0)}"
-  vm_extensions_command = "sudo /var/tmp/kubemaster.sh '${element(concat(azurerm_azuread_application.kub-ad-app-kv1.*.application_id, list("")), 0)}' '${element(concat(random_string.kub-rs-pd-kv.*.result, list("")), 0)}' '${var.environment_code}${var.deployment_code}${var.location_code}lkub-kv1' '${var.keyvault_tenantid}'"
+  vm_extensions_command = "sudo /var/tmp/kubemaster.sh '${element(concat(azurerm_azuread_application.kub-ad-app-kv1.*.application_id, list("")), 0)}' '${element(concat(random_string.kub-rs-pd-kv.*.result, list("")), 0)}' '${var.environment_code}${var.deployment_code}${var.location_code}lkub-kv1' '${var.keyvault_tenantid}' '${element(concat(azurerm_container_registry.container-registry.*.login_server, list("")), 0)}' '${var.docker_secret_email}' '${element(concat(azurerm_container_registry.container-registry.*.admin_username, list("")), 0)}' '${element(concat(azurerm_container_registry.container-registry.*.admin_password, list("")), 0)}'"
 }

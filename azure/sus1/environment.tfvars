@@ -14,13 +14,14 @@ instance_counts = {
 }
 instance_sizes = {
   "lkwn" = "Standard_DS1_v2"
-  "lkma" = "Standard_DS1_v2"
+  "lkma" = "Standard_DS2_v2"
 }
 os_disk_sizes = {
 }
 data_disk_sizes = {
-  "lkwn" = 1023
+  
 }
 data_disk_counts = {
-  "lkwn" = 0
+  
 }
+docker_secret_email = "xxxxx@xxxxx.com"

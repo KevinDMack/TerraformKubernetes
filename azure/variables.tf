@@ -151,3 +151,7 @@ variable "keyvault_objectid" {
   description = "The object id of the user to implement for kubernetes with key vault"
   default = ""
 }
+
+variable "docker_secret_email" {
+  description = "Email address required for configuring docker secret"
+}

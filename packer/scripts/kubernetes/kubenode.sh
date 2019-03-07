@@ -4,7 +4,10 @@ echo 'Executing kubenode.sh'
 #Grab the location from IMDS to determine if this is AzureCloud or AzureUSGovernment
 location=$(curl -sH Metadata:true "http://169.254.169.254/metadata/instance/compute/location?api-version=2017-08-01&format=text")
 cloud="AzureCloud"
-if [[ $location == USGov* ]]; then cloud="AzureUSGovernment"; fi
+if [[ $location == "USGovIowa" ]]; then cloud="AzureUSGovernment"; fi
+if [[ $location == "USGovTexas" ]]; then cloud="AzureUSGovernment"; fi
+if [[ $location == "USGovVirginia" ]]; then cloud="AzureUSGovernment"; fi
+if [[ $location == "USGovArizona" ]]; then cloud="AzureUSGovernment"; fi
 echo "cloud = $cloud"
 echo "location = $location"
 sudo apt-get install -y jq

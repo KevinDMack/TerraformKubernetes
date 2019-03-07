@@ -12,3 +12,4 @@ echo "5"
 sudo apt-get update -y
 echo "6"
 sudo apt-get install -y kubelet kubeadm kubectl kubernetes-cni --allow-unauthenticated
+sudo apt-get install -y jq

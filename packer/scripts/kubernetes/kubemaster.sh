@@ -24,4 +24,6 @@ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown uadmin:uadmin $HOME/.kube/config
 echo 'Configure networking for cluster'
 kubectl apply --filename https://git.io/weave-kube-1.6
+echo 'Configure ACR registry for Kubernetes cluster'
+kubectl create secret docker-registry <SECRET_NAME> --docker-server $5 --docker-email $6 --docker-username=$7 --docker-password $8
 echo 'Script Completed'
